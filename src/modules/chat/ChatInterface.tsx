@@ -118,6 +118,7 @@ function ChatInterface({
     cyclePermissionMode,
     providerModelCatalog,
     providerModelsLoading,
+    refreshProviderModels,
     providerModelActions,
     selectProviderModel,
     selectProviderEffort,
@@ -480,6 +481,7 @@ function ChatInterface({
               providerModelCatalog={providerModelCatalog}
               providerModelActions={providerModelActions}
               providerModelsLoading={providerModelsLoading}
+              refreshProviderModels={refreshProviderModels}
               tasksEnabled={tasksEnabled}
               isTaskMasterInstalled={isTaskMasterInstalled}
               onShowAllTasks={onShowAllTasks}

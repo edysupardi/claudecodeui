@@ -546,7 +546,8 @@ router.get(
   '/:provider/models',
   asyncHandler(async (req: Request, res: Response) => {
     const provider = parseProvider(req.params.provider);
-    const models = await providerModelsService.getProviderModels(provider);
+    const projectPath = typeof req.query.projectPath === 'string' ? req.query.projectPath : undefined;
+    const models = await providerModelsService.getProviderModels(provider, projectPath);
     res.json(createApiSuccessResponse({ provider, models }));
   }),
 );

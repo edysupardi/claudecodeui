@@ -59,6 +59,8 @@ type ProviderSelectionEmptyStateProps = {
   providerModelCatalog: Partial<Record<LLMProvider, ProviderModelsDefinition>>;
   providerModelActions: ProviderModelActions;
   providerModelsLoading: boolean;
+  /** Re-reads the catalog; called on every picker open so edits to project settings show up. */
+  refreshProviderModels?: () => void;
   tasksEnabled: boolean;
   isTaskMasterInstalled: boolean | null;
   onShowAllTasks?: (() => void) | null;
@@ -96,6 +98,7 @@ export default function ProviderSelectionEmptyState({
   providerModelCatalog,
   providerModelActions,
   providerModelsLoading,
+  refreshProviderModels,
   tasksEnabled,
   isTaskMasterInstalled,
   onShowAllTasks,
@@ -116,19 +119,24 @@ export default function ProviderSelectionEmptyState({
    */
   const setPickerOpen = useCallback((open: boolean) => {
     setDialogOpen(open);
-    if (!open) {
+    if (open) {
+      refreshProviderModels?.();
+    } else {
       setModelSearch("");
     }
-  }, []);
+  }, [refreshProviderModels]);
 
   /** One collapsible branch per provider, in the order the picker lists them. */
   const visibleProviderGroups = useMemo<ModelGroup[]>(
-    () => PROVIDER_META.map((meta) => ({
-      key: meta.id,
-      provider: meta.id,
-      name: meta.name,
-      models: providerModelCatalog[meta.id]?.OPTIONS ?? [],
-    })),
+    () => PROVIDER_META
+      // A project with its own Claude models in .claude/settings(.local).json offers nothing else.
+      .filter((meta) => !providerModelCatalog.claude?.projectScoped || meta.id === "claude")
+      .map((meta) => ({
+        key: meta.id,
+        provider: meta.id,
+        name: meta.name,
+        models: providerModelCatalog[meta.id]?.OPTIONS ?? [],
+      })),
     [providerModelCatalog],
   );
 

@@ -94,6 +94,8 @@ export type ProviderModelOption = {
 export type ProviderModelsDefinition = {
   OPTIONS: ProviderModelOption[];
   DEFAULT: string;
+  /** True when the catalog comes from the project's own Claude settings and replaces every other model. */
+  projectScoped?: boolean;
 };
 
 /**

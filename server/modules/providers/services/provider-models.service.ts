@@ -1,4 +1,5 @@
-import { providerModelsDb, sessionsDb } from '@/modules/database/index.js';
+import { projectsDb, providerModelsDb, sessionsDb } from '@/modules/database/index.js';
+import { readClaudeProjectModels } from '@/modules/providers/list/claude/claude-project-models.js';
 import { providerRegistry } from '@/modules/providers/provider.registry.js';
 import type { IProvider } from '@/shared/interfaces.js';
 import type {
@@ -34,6 +35,8 @@ type ProviderModelsServiceDependencies = {
   resolveProvider?: (provider: LLMProvider) => Pick<IProvider, 'models'>;
   catalog?: ProviderModelsCatalogStore;
   sessions?: ProviderModelsSessionStore;
+  isRegisteredProject?: (projectPath: string) => boolean;
+  readProjectModels?: (projectPath: string) => Promise<ProviderModelsDefinition | null>;
 };
 
 const toCustomProviderModelOption = (
@@ -84,8 +87,31 @@ export const createProviderModelsService = (dependencies: ProviderModelsServiceD
   const resolveProvider = dependencies.resolveProvider ?? providerRegistry.resolveProvider;
   const catalog = dependencies.catalog ?? providerModelsDb;
   const sessions = dependencies.sessions ?? sessionsDb;
+  const isRegisteredProject = dependencies.isRegisteredProject
+    ?? ((projectPath: string) => projectsDb.getProjectPath(projectPath) !== null);
+  const readProjectModels = dependencies.readProjectModels ?? readClaudeProjectModels;
 
-  const getProviderModels = async (provider: LLMProvider): Promise<ProviderModelsDefinition> => {
+  /**
+   * Returns the model catalog for one provider.
+   *
+   * @param provider - provider whose catalog is requested
+   * @param projectPath - optional project root; for Claude, a registered project that defines
+   *   its own models in .claude/settings(.local).json gets only those models
+   * @returns the project-scoped catalog when one applies, otherwise built-in plus custom models
+   */
+  const getProviderModels = async (
+    provider: LLMProvider,
+    projectPath?: string | null,
+  ): Promise<ProviderModelsDefinition> => {
+    const normalizedProjectPath = projectPath?.trim();
+    // Only registered projects are read so the query cannot point the server at arbitrary folders.
+    if (provider === 'claude' && normalizedProjectPath && isRegisteredProject(normalizedProjectPath)) {
+      const projectModels = await readProjectModels(normalizedProjectPath);
+      if (projectModels) {
+        return projectModels;
+      }
+    }
+
     const predefined = await resolveProvider(provider).models.getSupportedModels();
     return mergeProviderModels(predefined, catalog.listCustomProviderModels(provider));
   };

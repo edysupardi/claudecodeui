@@ -379,7 +379,8 @@ export const api = {
     authStatus: (provider: string) =>
       get(`/api/providers/${encodeURIComponent(provider)}/auth/status`),
 
-    models: (provider: string) => get(`/api/providers/${provider}/models`),
+    models: (provider: string, projectPath?: string | null) =>
+      get(`/api/providers/${provider}/models${projectPath ? `?projectPath=${encodeURIComponent(projectPath)}` : ''}`),
     createModel: (provider: string, input: unknown) =>
       post(`/api/providers/${provider}/models`, input),
     updateModel: (provider: string, recordId: string | number, input: unknown) =>

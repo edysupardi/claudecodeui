@@ -124,7 +124,8 @@ const getSessionSelectionKey = (provider: LLMProvider, sessionId: string): strin
   `${provider}:${sessionId}`
 );
 
-export function useChatProviderState({ selectedSession, selectedProject: _selectedProject }: UseChatProviderStateArgs) {
+export function useChatProviderState({ selectedSession, selectedProject }: UseChatProviderStateArgs) {
+  const projectPath = selectedProject?.fullPath ?? null;
   const [permissionMode, setPermissionMode] = useState<PermissionMode>('default');
   const [pendingPermissionRequests, setPendingPermissionRequests] = useState<PendingPermissionRequest[]>([]);
   // The provider the composer sends under. Held here rather than read from
@@ -195,7 +196,7 @@ export function useChatProviderState({ selectedSession, selectedProject: _select
     try {
       const results = await Promise.all(
         PROVIDERS.map(async (p) => {
-          const response = await api.providers.models(p);
+          const response = await api.providers.models(p, projectPath);
           const body = (await response.json()) as ProviderModelsApiResponse;
           if (!body.success || !body.data?.models) {
             return null;
@@ -228,11 +229,25 @@ export function useChatProviderState({ selectedSession, selectedProject: _select
         setProviderModelsLoading(false);
       }
     }
-  }, []);
+  }, [projectPath]);
 
   useEffect(() => {
     void loadProviderModels();
   }, [loadProviderModels]);
+
+  // A project that defines its own Claude models in .claude/settings(.local).json offers only those.
+  const isProjectScopedCatalog = Boolean(providerModelCatalog.claude?.projectScoped);
+
+  // New chats in such a project can only run Claude; opening an existing session of another
+  // provider still switches to it through the session sync effect below.
+  useEffect(() => {
+    if (!isProjectScopedCatalog || selectedSession?.__provider || provider === 'claude') {
+      return;
+    }
+
+    setProvider('claude');
+    writeSelectedProvider('claude');
+  }, [isProjectScopedCatalog, provider, selectedSession?.__provider]);
 
   useEffect(() => {
     let cancelled = false;
@@ -824,6 +839,8 @@ export function useChatProviderState({ selectedSession, selectedProject: _select
     cyclePermissionMode,
     providerModelCatalog,
     providerModelsLoading,
+    refreshProviderModels: loadProviderModels,
+    isProjectScopedCatalog,
     providerModelActions,
     selectProviderModel,
     selectProviderEffort,

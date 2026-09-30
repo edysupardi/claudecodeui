@@ -47,6 +47,7 @@ type ChatMessagesPaneProps = {
   providerModelCatalog: Partial<Record<LLMProvider, ProviderModelsDefinition>>;
   providerModelActions: ProviderModelActions;
   providerModelsLoading: boolean;
+  refreshProviderModels?: () => void;
   tasksEnabled: boolean;
   isTaskMasterInstalled: boolean | null;
   onShowAllTasks?: (() => void) | null;
@@ -116,6 +117,7 @@ function ChatMessagesPane({
   providerModelCatalog,
   providerModelActions,
   providerModelsLoading,
+  refreshProviderModels,
   tasksEnabled,
   isTaskMasterInstalled,
   onShowAllTasks,
@@ -239,6 +241,7 @@ function ChatMessagesPane({
           providerModelCatalog={providerModelCatalog}
           providerModelActions={providerModelActions}
           providerModelsLoading={providerModelsLoading}
+          refreshProviderModels={refreshProviderModels}
           tasksEnabled={tasksEnabled}
           isTaskMasterInstalled={isTaskMasterInstalled}
           onShowAllTasks={onShowAllTasks}
